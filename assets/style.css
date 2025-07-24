@@ -1,0 +1,66 @@
+/* assets/style.css */
+
+body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f9fc;
+    color: #333;
+}
+
+.navbar-custom {
+    background: linear-gradient(90deg, #0077b6 0%, #0096c7 100%);
+    font-weight: 700 !important;
+    font-size: 1.5rem !important;
+    letter-spacing: 1.2px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+}
+
+.tabs-container {
+    margin-bottom: 20px;
+}
+
+.tab-item {
+    font-weight: 600 !important;
+    color: #0077b6 !important;
+    padding: 10px 15px !important;
+}
+
+.tab-item--selected {
+    background-color: #0096c7 !important;
+    color: white !important;
+    border-radius: 8px 8px 0 0 !important;
+}
+
+.content-container {
+    margin-top: 10px;
+    margin-bottom: 30px;
+}
+
+.section-title {
+    color: #023e8a;
+    margin-bottom: 20px;
+    font-weight: 700;
+    border-bottom: 3px solid #0096c7;
+    padding-bottom: 5px;
+}
+
+.graph-container {
+    background-color: white !important;
+    border-radius: 10px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    padding: 15px;
+}
+
+.custom-dropdown .Select-control, .custom-dropdown .css-1hwfws3 {
+    border-radius: 8px !important;
+    border-color: #0077b6 !important;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+    .navbar-custom {
+        font-size: 1.2rem !important;
+    }
+    .tab-item {
+        padding: 8px 10px !important;
+    }
+}
