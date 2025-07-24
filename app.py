@@ -6,6 +6,7 @@ import pandas as pd
 import plotly.express as px
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+import streamlit as st
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
