@@ -6,13 +6,13 @@ import pandas as pd
 import plotly.express as px
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-import streamlit as st
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-# Initialize app with Bootstrap theme
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+# Initialize app
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 server = app.server
+
 
 # Load and prepare data
 df = pd.read_excel("world data.xlsx")
@@ -23,13 +23,16 @@ key_indicators = [
     "Account (% age 15+)",
     "Financial institution account (% age 15+)",
     "Mobile money account (% age 15+)",
-    "Made or received a digital payment (% age 15+)"
+    "Made or received a digital payment (% age 15+)"  # Fixed indicator name here
 ]
-df_filtered = df[(df["Indicator"].isin(key_indicators)) & (df["Year"].isin([2011, 2014, 2017, 2021]))].copy()
+df_filtered = df[
+    (df["Indicator"].isin(key_indicators)) &
+    (df["Year"].isin([2011, 2014, 2017, 2021]))
+].copy()
 
 # --- Demographics Page Variables ---
 dfs_keywords = [
-    "mobile money", "digital payment", "internet", "online", "send money", 
+    "mobile money", "digital payment", "internet", "online", "send money",
     "receive money", "used a mobile phone", "used the internet", "e-wallet", "used a mobile"
 ]
 def assign_type(indicator):
@@ -72,7 +75,7 @@ def segment_countries(df, year, region=None):
 
     df_pivot = df_filtered.pivot_table(index='Country name', columns='Indicator', values='Indicator value')
     df_pivot = df_pivot.dropna(thresh=int(0.5 * len(df_pivot)), axis=1).fillna(df_pivot.mean())
-    
+
     scaler = StandardScaler()
     scaled_data = scaler.fit_transform(df_pivot)
 
@@ -96,31 +99,27 @@ app.layout = dbc.Container([
         className="mb-4",
         style={"textAlign": "center", "fontWeight": "bold", "fontSize": "24px"}
     ),
-
+    
     dbc.Row([
         # Left column for vertical tabs
         dbc.Col(
-            html.Div([
-                html.Div([
-                    dcc.Tabs(
-                        id="tabs",
-                        value='tab-home',
-                        children=[
-                            dcc.Tab(label='Home', value='tab-home', className='vertical-tab', selected_className='vertical-tab--selected'),
-                            dcc.Tab(label='Trends', value='tab-trends', className='vertical-tab', selected_className='vertical-tab--selected'),
-                            dcc.Tab(label='Demographics', value='tab-demographics', className='vertical-tab', selected_className='vertical-tab--selected'),
-                            dcc.Tab(label='Barriers', value='tab-barriers', className='vertical-tab', selected_className='vertical-tab--selected'),
-                            dcc.Tab(label='Market Segmantations', value='tab-clusters', className='vertical-tab', selected_className='vertical-tab--selected'),
-                        ],
-                        vertical=True,
-                        className='custom-vertical-tabs'
-                    )
-                ])
-            ]),
+            dcc.Tabs(
+                id="tabs",
+                value='tab-trends',
+                children=[
+                    dcc.Tab(label='Home', value='tab-home'),
+                    dcc.Tab(label='Trends', value='tab-trends'),
+                    dcc.Tab(label='Demographics', value='tab-demographics'),
+                    dcc.Tab(label='Barriers', value='tab-barriers'),
+                    dcc.Tab(label='Clusters', value='tab-clusters'),
+                ],
+                vertical=True,
+                className='custom-tabs'
+            ),
             width=2,
             className="pr-0"
         ),
-
+        
         # Right column for content
         dbc.Col(
             html.Div(id="tabs-content", style={"padding": "16px"}),
@@ -128,9 +127,7 @@ app.layout = dbc.Container([
         )
     ])
 ], fluid=True)
-
-
-# --- Render Tabs --- (fixed indentation)
+# --- Render Tabs ---
 @app.callback(Output('tabs-content', 'children'), Input('tabs', 'value'))
 def render_content(tab):
     container_style = {
@@ -140,122 +137,90 @@ def render_content(tab):
         "boxShadow": "0 4px 8px rgba(50, 150, 50, 0.1)",
         "marginBottom": "30px"
     }
-    if tab == 'tab-home':
+
+    if tab == 'tab-trends':
         return dbc.Container([
-            html.Div(className='tab-section', children=[
-                html.H2("Welcome to the Global Financial Inclusion Dashboard", className="home-title"),
-                html.P("Gain powerful insights into how adults around the world access, manage, and use financial services from bank accounts to mobile money and digital payments.", className="home-description"),
-
-                html.H3("What This Dashboard Offers", className="home-subtitle"),
-                html.Ul([
-                    html.Li("Explore global and regional trends in financial account ownership"),
-                    html.Li("Analyze digital payment adoption across countries"),
-                    html.Li("Dive into demographic insights — impact of gender, income, education, and region"),
-                    html.Li("Understand barriers to financial inclusion in low- and middle-income countries"),
-                    html.Li("Visualize country clusters based on inclusion metrics")
-                ], className="home-list"),
-
-                html.H3("Why You Should Explore", className="home-subtitle"),
-                html.P("Financial inclusion is more than access — it’s a pathway to empowerment, opportunity, and resilience.", className="home-description"),
-                html.P("This dashboard uses real-world data to help:", className="home-description"),
-
-                html.Ul([
-                    html.Li("Policy makers make informed decisions"),
-                    html.Li("Researchers identify key patterns and challenges"),
-                    html.Li("Innovators tailor solutions for underserved populations"),
-                ], className="home-list")
-            ]),
-        ])
-
-    elif tab == 'tab-trends':
-        return dbc.Container([
-            html.H4("📈 Trends in Financial Inclusion", className="section-title"),
+            html.H4("📈 Trends in Financial Inclusion", className="text-center my-3", style={"fontWeight": "bold", "color": "#2d7a2d", "fontSize": "28px"}),
             dbc.Row([
                 dbc.Col(dcc.Dropdown(
                     id='indicator-dropdown',
                     options=[{"label": ind, "value": ind} for ind in key_indicators],
-                    value="Account (% age 15+)", clearable=False,
-                    className="custom-dropdown"
+                    value="Account (% age 15+)", clearable=False
                 ), md=6),
                 dbc.Col(dcc.RadioItems(
                     id='view-toggle',
                     options=[{"label": v, "value": v} for v in ["Global", "Regional", "Rwanda"]],
                     value="Global",
-                    labelStyle={"display": "inline-block", "margin-right": "10px"},
-                    className="custom-radio"
+                    labelStyle={"display": "inline-block", "marginRight": "10px", "color": "#2d7a2d", "fontWeight": "600"}
                 ), md=6),
             ], className="mb-3"),
-            dcc.Graph(id='combined-trend')
-        ])
+            html.Div(dcc.Graph(id='combined-trend'), style=container_style)
+        ], fluid=True)
 
     elif tab == 'tab-demographics':
         return dbc.Container([
-            html.H4("👥 Demographics", className="section-title"),
+            html.H4("👥 Demographics", className="text-center my-3", style={"fontWeight": "bold", "color": "#2d7a2d", "fontSize": "28px"}),
             dbc.Row([
                 dbc.Col(dcc.Dropdown(
                     id='data-type',
                     options=[{"label": "Account", "value": "Account"}, {"label": "DFS", "value": "DFS"}],
-                    value="Account", clearable=False,
-                    className="custom-dropdown"
+                    value="Account", clearable=False
                 ), md=6),
                 dbc.Col(dcc.Dropdown(
                     id='demographic',
                     options=[{"label": f, "value": f} for f in ["Age", "Gender", "Education", "Income"]],
-                    value="Age", clearable=False,
-                    className="custom-dropdown"
+                    value="Age", clearable=False
                 ), md=6),
             ], className="mb-3"),
-            dcc.Graph(id='bar-graph')
-        ])
+            html.Div(
+                dcc.Graph(id='bar-graph'),
+                style={**container_style, "height": "600px", "overflowY": "auto"}
+            )
+        ], fluid=True)
 
     elif tab == 'tab-barriers':
         return dbc.Container([
-            html.H4("🚧 Barriers to Financial Inclusion", className="section-title"),
+            html.H4("🚧 Barriers to Financial Inclusion", className="text-center my-3", style={"fontWeight": "bold", "color": "#2d7a2d", "fontSize": "28px"}),
             dbc.Row([
                 dbc.Col(dcc.Dropdown(
                     id='region-dropdown',
                     options=[{"label": r, "value": r} for r in sorted(df_barriers["Region"].dropna().unique())],
-                    placeholder="Select Region",
-                    className="custom-dropdown"
+                    placeholder="Select Region"
                 ), md=4),
                 dbc.Col(dcc.Dropdown(
                     id='income-dropdown',
                     options=[{"label": i, "value": i} for i in sorted(df_barriers["Income group"].dropna().unique())],
-                    placeholder="Select Income Group",
-                    className="custom-dropdown"
+                    placeholder="Select Income Group"
                 ), md=4),
                 dbc.Col(dcc.Dropdown(
                     id='country-dropdown',
                     options=[{"label": c, "value": c} for c in sorted(df_barriers["Country name"].dropna().unique())],
-                    placeholder="Select Country",
-                    className="custom-dropdown"
+                    placeholder="Select Country"
                 ), md=4),
             ], className="mb-3"),
-            dcc.Graph(id='barrier-graph')
-        ])
+            html.Div(dcc.Graph(id='barrier-graph'), style=container_style)
+        ], fluid=True)
 
     elif tab == 'tab-clusters':
         return dbc.Container([
-            html.H4(" Grouping by Countries into Market segmentations", className="section-title"),
+            html.H4("🗺️ Clusters by Country", className="text-center my-3", style={"fontWeight": "bold", "color": "#2d7a2d", "fontSize": "28px"}),
             dbc.Row([
                 dbc.Col(dcc.Dropdown(
                     id='year_dropdown',
                     options=[{'label': y, 'value': y} for y in sorted(df['Year'].unique())],
-                    value=df['Year'].max(),
-                    className="custom-dropdown"
+                    value=df['Year'].max()
                 ), md=6),
                 dbc.Col(dcc.Dropdown(
                     id='region_dropdown',
                     options=[{'label': r, 'value': r} for r in sorted(df['Region'].dropna().unique())],
-                    placeholder='All Regions', clearable=True,
-                    className="custom-dropdown"
+                    placeholder='All Regions', clearable=True
                 ), md=6),
             ], className="mb-3"),
-            dcc.Graph(id='map_graph', style={"height": "600px"}, className="graph-container")
-        ])
+            html.Div(dcc.Graph(id='map_graph'), style=container_style)
+        ], fluid=True)
 
+# --- Callbacks ---
 
-# --- Callbacks for figures (no style changes needed) ---
 @app.callback(
     Output("combined-trend", "figure"),
     Input("indicator-dropdown", "value"),
@@ -290,49 +255,95 @@ def update_combined_trend(indicator, view):
         trend_data.append(rwanda_df)
 
     combined_df = pd.concat(trend_data)
-    fig = px.line(combined_df, x="Year", y="Indicator value", color="Source", markers=True,
-                  title=f"{indicator} — {view} Comparison", labels={"Indicator value": "%"},
-                  template="plotly_white", color_discrete_sequence=px.colors.qualitative.Set2)
-    fig.update_layout(title_font_size=20, margin=dict(l=40, r=40, t=60, b=40))
+
+    # Create figure
+    fig = px.line(
+        combined_df,
+        x="Year",
+        y="Indicator value",
+        color="Source",
+        markers=True,
+        labels={"Indicator value": "%"}
+    )
+
+    # Remove grid lines
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False)
+
+    # Centered title
+    fig.update_layout(
+        title={
+            'text': f"<b>{indicator} — {view} Comparison</b>",
+            'y': 0.95,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top',
+            'font': dict(size=24, color='darkgreen')
+        },
+        legend_title_text='Source',
+        plot_bgcolor='white',
+        font=dict(family="Arial", size=14, color="darkgreen"),
+        margin=dict(t=100, b=40, l=40, r=40),
+    )
+
+    # Color map
+    color_map = {
+        "Global Average": "#2ca02c",  # medium green
+        "Rwanda": "#1f5e1f",          # dark green
+    }
+
+    # Add region-specific colors if Regional
+    if view == "Regional":
+        region_colors = px.colors.qualitative.Set2
+        for i, source in enumerate(combined_df["Source"].unique()):
+            if source not in color_map:
+                color_map[source] = region_colors[i % len(region_colors)]
+
+    # Apply custom colors
+    for trace in fig.data:
+        trace.line.color = color_map.get(trace.name, '#66bb66')
+        trace.marker.color = color_map.get(trace.name, '#66bb66')
+
     return fig
+
+
 
 @app.callback(
     Output("bar-graph", "figure"),
-    Input("data-type", "value"),
-    Input("demographic", "value")
+    Input("data-type", "value"), Input("demographic", "value")
 )
 def update_demographic_graph(data_type, demographic):
     df_selected = account_data.get(demographic) if data_type == "Account" else dfs_data.get(demographic)
-
     if df_selected is None or df_selected.empty:
         return px.bar(title="No data available.")
-
-    df_summary = (
-        df_selected.groupby("Indicator")["Indicator value"]
-        .mean()
-        .reset_index()
-        .sort_values(by="Indicator value", ascending=True)
-        .head(20)
-    )
+    summary = df_selected.groupby("Indicator")["Indicator value"].mean().reset_index()
+    summary_sorted = summary.sort_values(by="Indicator value", ascending=True)
 
     fig = px.bar(
-        df_summary,
+        summary_sorted,
         x="Indicator value",
         y="Indicator",
         orientation="h",
-        title=f"{data_type} by {demographic}",
-        labels={"Indicator value": "%"},
-        template="plotly_white",
-        color_discrete_sequence=px.colors.qualitative.Set2
+        labels={"Indicator value": "%", "Indicator": "Indicator"},
+        color_discrete_sequence=px.colors.sequential.Greens
     )
-
+    
+    # Remove grid lines, bigger height and allow scrolling by setting height + overflow in container (done in layout)
     fig.update_layout(
-        xaxis_tickangle=-45,
-        height=500,
-        margin={"t": 50, "b": 100},
-        yaxis={"categoryorder": "total ascending"},
+        title={
+            'text': f"<b>{data_type} — {demographic} Overview</b>",
+            'y':0.95,
+            'x':0.5,
+            'xanchor': 'center',
+            'yanchor': 'top',
+            'font': dict(size=24, color='darkgreen')
+        },
+        plot_bgcolor='white',
+        font=dict(family="Arial", size=14, color="darkgreen"),
+        margin=dict(t=100, b=40, l=150, r=40),
+        xaxis=dict(showgrid=False),
+        yaxis=dict(showgrid=False),
     )
-
     return fig
 
 
@@ -344,16 +355,42 @@ def update_demographic_graph(data_type, demographic):
 )
 def update_barrier_graph(region, income, country):
     filtered = df_barriers.copy()
-    if region: filtered = filtered[filtered["Region"] == region]
-    if income: filtered = filtered[filtered["Income group"] == income]
-    if country: filtered = filtered[filtered["Country name"] == country]
+    if region:
+        filtered = filtered[filtered["Region"] == region]
+    if income:
+        filtered = filtered[filtered["Income group"] == income]
+    if country:
+        filtered = filtered[filtered["Country name"] == country]
     if filtered.empty:
         return px.bar(title="No data available.")
     summary = filtered.groupby("Indicator")["Indicator value"].mean().reset_index()
-    fig = px.bar(summary.sort_values(by="Indicator value", ascending=True), x="Indicator value", y="Indicator", orientation="h",
-                 template="plotly_white", color_discrete_sequence=px.colors.qualitative.Set2)
-    fig.update_layout(margin=dict(l=100, r=20, t=40, b=40))
+    summary_sorted = summary.sort_values(by="Indicator value", ascending=True)  # ascending order as requested
+
+    fig = px.bar(
+        summary_sorted,
+        x="Indicator value",
+        y="Indicator",
+        orientation="h",
+        labels={"Indicator value": "%", "Indicator": "Barrier"},
+        color_discrete_sequence=px.colors.sequential.Greens_r
+    )
+    fig.update_layout(
+        title={
+            'text': "<b>Barriers to Financial Inclusion</b>",
+            'y':0.95,
+            'x':0.5,
+            'xanchor': 'center',
+            'yanchor': 'top',
+            'font': dict(size=24, color='darkgreen')
+        },
+        plot_bgcolor='white',
+        font=dict(family="Arial", size=14, color="darkgreen"),
+        margin=dict(t=100, b=40, l=200, r=40),
+        xaxis=dict(showgrid=False),
+        yaxis=dict(showgrid=False),
+    )
     return fig
+
 
 @app.callback(
     Output("map_graph", "figure"),
@@ -362,12 +399,31 @@ def update_barrier_graph(region, income, country):
 )
 def update_map_graph(year, region):
     df_segmented = segment_countries(df, year, region)
-    fig = px.choropleth(df_segmented, locations='Country name', locationmode='country names',
-                        color='Segment', hover_name='Country name',
-                        color_discrete_sequence=px.colors.qualitative.Set2, template="plotly_white")
-    fig.update_layout(margin=dict(l=20, r=20, t=40, b=40))
+    fig = px.choropleth(
+        df_segmented,
+        locations='Country name',
+        locationmode='country names',
+        color='Segment',
+        hover_name='Country name',
+        color_continuous_scale=px.colors.sequential.Greens,
+        labels={'Segment': 'Income Group'}
+    )
+    fig.update_layout(
+        title={
+            'text': "<b>Clusters by Country</b>",
+            'y':0.95,
+            'x':0.5,
+            'xanchor': 'center',
+            'yanchor': 'top',
+            'font': dict(size=24, color='darkgreen')
+        },
+        plot_bgcolor='white',
+        font=dict(family="Arial", size=14, color="darkgreen"),
+        margin=dict(t=100, b=40, l=40, r=40)
+    )
     return fig
+
 
 # Run App
 if __name__ == "__main__":
-    app.run(debug=True , port=8051)
+    app.run(debug=True)
